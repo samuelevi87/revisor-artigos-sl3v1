@@ -79,6 +79,7 @@ revisao_yaml:
     e que contenha todas as informações solicitadas.
   expected_output: >
     YAML revisado, corrigido e validado de acordo com as solicitações e o template proposto.
+  output_file: 'revisor_artigos_sl3v1/resources/yamls/output.yaml'
   agent: revisor_yaml
   inputs:
     solicitacoes: |
