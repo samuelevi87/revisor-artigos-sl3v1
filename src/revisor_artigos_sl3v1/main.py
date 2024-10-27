@@ -2,19 +2,93 @@
 
 # Importações necessárias para o funcionamento do script
 import os
+import sys
 import yaml
+from datetime import datetime as dt
 from dotenv import load_dotenv
 from revisor_artigos_sl3v1.crew import RevisorArtigosSl3V1Crew
-from crewai_tools import PDFSearchTool
+from crewai_tools import PDFSearchTool, SerperDevTool
 from crewai import LLM
 
 # Caminho da pasta contendo os PDFs a serem processados
 pdf_folder = os.path.join(os.path.dirname(__file__), 'resources', 'pdfs')
 
+# Configurar a saída do terminal para UTF-8
+sys.stdout.reconfigure(encoding='utf-8')
+
 # Carregar as variáveis de ambiente do arquivo .env
 load_dotenv()
 os.environ['OPENAI_API_KEY'] = os.getenv("OPENAI_API_KEY")
 
+
+def generate_linkedin_article(article_data, pdf_file_name, task_config):
+    """
+    Gera um artigo em formato Markdown para o LinkedIn com base nos dados do YAML e na configuração da tarefa.
+
+    Args:
+        article_data (dict): Dados do artigo extraídos do YAML.
+        pdf_file_name (str): Nome do arquivo PDF original.
+        task_config (dict): Configuração da tarefa do arquivo tasks.yaml.
+
+    Returns:
+        str: Conteúdo do artigo em formato Markdown.
+    """
+    try:
+        # Extrair o título do artigo a partir do nome do arquivo PDF
+        title = os.path.splitext(pdf_file_name)[0].split(' - ')[1]
+
+        # Construir o artigo em Markdown
+        content = []
+
+        # Emoji relevante para o título
+        content.append("🔬 #CiênciaNaPrática")
+
+        # Título chamativo
+        content.append(f"# {title}: {task_config.get('titulo')}")
+        content.append("\n---\n")
+
+        # Hook inicial
+        content.append(task_config.get('hook'))
+        content.append("\n")
+
+        # Adicionar conteúdo baseado nos dados do YAML
+        artigo = article_data.get('ARTIGO', [{}])[0] if isinstance(article_data.get('ARTIGO'), list) else {}
+
+        # Seções principais do artigo
+        secoes = task_config.get('secoes', {})
+        if 'gap' in secoes and 'GAP' in artigo:
+            content.append(f"## {secoes['gap']}")
+            content.append(f"\n{artigo['GAP']}\n")
+
+        if 'objetivos' in secoes and 'OBJETIVOS' in artigo:
+            content.append(f"## {secoes['objetivos']}")
+            content.append(f"\n{artigo['OBJETIVOS']}\n")
+
+        if 'metodologia' in secoes and 'METODOLOGIA' in artigo:
+            content.append(f"## {secoes['metodologia']}")
+            content.append(f"\n{artigo['METODOLOGIA']}\n")
+
+        if 'resultados' in secoes and 'RESULTADOS' in artigo:
+            content.append(f"## {secoes['resultados']}")
+            content.append(f"\n{artigo['RESULTADOS']}\n")
+
+        # Provocação para engajamento
+        content.append("\n## Sua vez de compartilhar! 💭")
+        content.append(f"\n{task_config.get('provocacao')}")
+        content.append("\nCompartilhe suas ideias nos comentários! 👇")
+
+        # Hashtags relevantes
+        content.append("\n---\n")
+        content.append(task_config.get('hashtags'))
+
+        # Juntar todo o conteúdo em uma string Markdown
+        article_content = '\n'.join(content)
+
+        return article_content
+
+    except Exception as e:
+        print(f"Erro ao gerar artigo: {e}")
+        return None
 
 def carregar_configuracoes():
     """
@@ -56,13 +130,58 @@ def carregar_configuracoes():
     return agents_config, tasks_config
 
 
+def save_article(content, file_name="linkedin_article.md"):
+    """
+    Salva o conteúdo gerado em um arquivo Markdown na pasta 'resources/artigos_markdown'.
+
+    Args:
+        content (str): O conteúdo do artigo em formato de string.
+        file_name (str): O nome do arquivo para salvar o artigo.
+    """
+    try:
+        # Obter o diretório base do projeto (onde está o main.py)
+        base_dir = os.path.dirname(os.path.dirname(__file__))
+
+        # Caminho para o diretório 'artigos_markdown' dentro de src/revisor_artigos_sl3v1/resources
+        md_dir = os.path.join(base_dir, 'revisor_artigos_sl3v1', 'resources', 'artigos_markdown')
+
+        # Criar o diretório se não existir
+        os.makedirs(md_dir, exist_ok=True)
+
+        # Caminho completo do arquivo Markdown
+        md_path = os.path.join(md_dir, file_name)
+
+        # Salvar o conteúdo no arquivo
+        with open(md_path, 'w', encoding='utf-8') as file:
+            file.write(content)
+        print(f"Artigo salvo em: {md_path}")
+
+    except Exception as e:
+        print(f"Erro ao salvar o arquivo: {e}")
+        print(f"Tentando salvar em caminho alternativo...")
+
+        try:
+            # Tentativa alternativa usando caminho relativo
+            alt_md_dir = os.path.join('revisor_artigos_sl3v1', 'resources', 'artigos_markdown')
+            os.makedirs(alt_md_dir, exist_ok=True)
+            alt_md_path = os.path.join(alt_md_dir, file_name)
+
+            with open(alt_md_path, 'w', encoding='utf-8') as file:
+                file.write(content)
+            print(f"Artigo salvo em caminho alternativo: {alt_md_path}")
+
+        except Exception as e2:
+            print(f"Erro ao salvar no caminho alternativo: {e2}")
+
+
 def processar_pdfs():
     """
-    Criar uma equipe de agentes para processar cada PDF na pasta pdf_folder.
+    Processar cada PDF na pasta pdf_folder e salvar o resultado em um arquivo YAML separado.
 
-    Esta função utiliza as configurações de agentes e tarefas para criar uma
-    equipe de agentes que processará cada arquivo PDF encontrado na pasta
-    especificada. Os resultados são salvos em um arquivo YAML com um timestamp.
+    Esta função utiliza as configurações de agentes e tarefas para criar uma equipe
+    de agentes que processará cada arquivo PDF encontrado na pasta especificada.
+    Os resultados são salvos individualmente em arquivos YAML nomeados de acordo com
+    o arquivo PDF correspondente.
 
     Fluxo de Execução:
         1. Carregar as configurações de agentes e tarefas.
@@ -73,7 +192,8 @@ def processar_pdfs():
             c. Preparar os inputs para a leitura do PDF.
             d. Criar e executar a equipe com os inputs preparados.
             e. Extrair o resultado em formato YAML.
-        4. Salvar os resultados finais em um arquivo YAML.
+            f. Salvar o resultado em um arquivo YAML específico.
+        4. Continuar para o próximo PDF em caso de erro.
 
     Exceptions:
         Captura qualquer exceção durante o processamento de cada PDF e continua
@@ -94,44 +214,51 @@ def processar_pdfs():
         temperature=0.7
     )
 
+    # Diretório para salvar os arquivos YAML gerados
+    yaml_dir = os.path.join(os.path.dirname(__file__), 'revisor_artigos_sl3v1', 'resources', 'yamls')
+    os.makedirs(yaml_dir, exist_ok=True)  # Criar o diretório se não existir
+
     # Listar todos os arquivos PDF na pasta especificada
     pdf_files = [f for f in os.listdir(pdf_folder) if f.endswith('.pdf')]
-    all_articles = []
 
     # Iterar sobre cada arquivo PDF encontrado
     for pdf_file_name in pdf_files:
         print(f"\nProcessando: {pdf_file_name}")
 
-        # Criar o caminho completo do arquivo PDF
-        pdf_path = os.path.join(pdf_folder, pdf_file_name)
-
-        # Instanciar a ferramenta de busca em PDF para o arquivo atual
-        pdf_tool = PDFSearchTool(pdf=pdf_path)
-
-        # Obter as configurações de inputs para a tarefa de leitura de PDFs
-        task_config = tasks_config.get('leitura_pdfs', {}).get('inputs', {})
-
-        # Preparar os inputs necessários para a leitura do PDF
-        leitura_inputs = {
-            'arquivo': pdf_file_name,
-            'solicitacoes': task_config.get('solicitacoes', ''),
-            'template': task_config.get('template', '').replace('nome do arquivo.pdf', pdf_file_name),
-            'controles': task_config.get('controles', ''),
-            'restricoes': task_config.get('restricoes', '')
-        }
-
-        # Criar uma instância da equipe para o processamento do PDF atual
-        crew_instance = RevisorArtigosSl3V1Crew(
-            agents_config=agents_config,
-            tasks_config=tasks_config,
-            llm=llm,
-            pdf_tool=pdf_tool
-        )
-
-        # Criar a equipe de agentes
-        crew = crew_instance.create_crew()
-
         try:
+            # Criar o caminho completo do arquivo PDF
+            pdf_path = os.path.join(pdf_folder, pdf_file_name)
+
+            # Instanciar a ferramenta de busca em PDF para o arquivo atual
+            pdf_tool = PDFSearchTool(pdf=pdf_path)
+
+            # Obter as configurações de inputs para a tarefa de leitura de PDFs
+            task_config = tasks_config.get('leitura_pdfs', {}).get('inputs', {})
+
+            # Preparar os inputs necessários para a leitura do PDF
+            leitura_inputs = {
+                'arquivo': pdf_file_name,
+                'solicitacoes': task_config.get('solicitacoes', ''),
+                'template': task_config.get('template', '').replace('nome do arquivo.pdf', pdf_file_name),
+                'controles': task_config.get('controles', ''),
+                'restricoes': task_config.get('restricoes', '')
+            }
+
+            # Instanciar a ferramenta de busca em Serper para o novo agente
+            serper_tool = SerperDevTool()
+
+            # Criar uma instância da equipe para o processamento do PDF atual
+            crew_instance = RevisorArtigosSl3V1Crew(
+                agents_config=agents_config,
+                tasks_config=tasks_config,
+                llm=llm,
+                pdf_tool=pdf_tool,
+                serper_tool=serper_tool
+            )
+
+            # Criar a equipe de agentes
+            crew = crew_instance.create_crew()
+
             # Executar a equipe com os inputs preparados
             print("\nExecutando com inputs:")
             print(f"- Arquivo: {pdf_file_name}")
@@ -139,63 +266,110 @@ def processar_pdfs():
 
             results = crew.kickoff(inputs=leitura_inputs)
 
-            # Converter o resultado para string se necessário
-            if not isinstance(results, str):
-                results = str(results)
-
-            print("\nResultado obtido:", results)
-
-            # Extrair o conteúdo YAML do resultado
+            # Extrair conteúdo YAML do resultado
             yaml_content = None
             if "```yaml" in results:
                 yaml_content = results.split("```yaml")[1].split("```")[0].strip()
             elif "ARTIGO:" in results:
                 yaml_content = results[results.find("ARTIGO:"):]
 
-            # Carregar o conteúdo YAML extraído em um dicionário
+            # Salvar o resultado em um arquivo YAML específico para o PDF
             if yaml_content:
                 try:
                     article_data = yaml.safe_load(yaml_content)
                     if article_data:
-                        print("\nYAML extraído com sucesso!")
-                        all_articles.append(article_data)
+                        yaml_file = os.path.join(yaml_dir, f'output_{os.path.splitext(pdf_file_name)[0]}.yaml')
+                        with open(yaml_file, 'w', encoding='utf-8') as file:
+                            yaml.dump(article_data, file, default_flow_style=False, allow_unicode=True)
+                        print(f"\nYAML salvo em: {yaml_file}")
                     else:
                         print(f"\nErro: YAML vazio para {pdf_file_name}")
+                        continue  # Pula para o próximo PDF se o YAML estiver vazio
                 except yaml.YAMLError as e:
                     print(f"\nErro ao fazer parse do YAML para {pdf_file_name}: {e}")
+                    continue  # Pula para o próximo PDF em caso de erro no parse
             else:
-                print(f"\nNão foi possível extrair YAML do resultado para {pdf_file_name}")
+                print(f"\nNenhum resultado encontrado para {pdf_file_name}.")
+                continue  # Pula para o próximo PDF se não houver resultado
 
         except Exception as e:
             print(f"\nErro ao processar {pdf_file_name}: {e}")
             continue
 
-    # Salvar os resultados finais em um arquivo YAML
-    if all_articles:
-        final_output = {'artigos': all_articles}
-        from datetime import datetime
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_file = f'output_{timestamp}.yaml'
 
+def gerar_artigos_a_partir_de_yaml():
+    """
+    Itera sobre os arquivos YAML gerados no diretório especificado e cria um artigo
+    em Markdown para cada um.
+
+    Para cada arquivo YAML encontrado, esta função extrai os dados do artigo,
+    gera um conteúdo em formato Markdown e o salva em um arquivo .md na mesma estrutura
+    de diretório.
+
+    Fluxo de Execução:
+        1. Listar todos os arquivos YAML gerados no diretório 'src/revisor_artigos_sl3v1/resources/yamls'.
+        2. Para cada arquivo YAML:
+            a. Ler o conteúdo do arquivo.
+            b. Verificar se contém a chave 'ARTIGO'.
+            c. Gerar o conteúdo em Markdown usando 'generate_linkedin_article()'.
+            d. Salvar o artigo em um arquivo .md no diretório 'src/revisor_artigos_sl3v1/resources/artigos_markdown'.
+        3. Em caso de erro, exibir uma mensagem e continuar para o próximo arquivo.
+
+    Exceptions:
+        Captura qualquer exceção durante o processamento de um arquivo YAML e
+        continua para o próximo, garantindo que a função não seja interrompida.
+    """
+    # Diretório de leitura dos arquivos YAML
+    yaml_dir = os.path.join(os.path.dirname(__file__), 'revisor_artigos_sl3v1', 'resources', 'yamls')
+    # Diretório de salvamento dos arquivos Markdown
+    markdown_dir = os.path.join(os.path.dirname(__file__), 'revisor_artigos_sl3v1', 'resources', 'artigos_markdown')
+    os.makedirs(markdown_dir, exist_ok=True)  # Criar o diretório se não existir
+
+    # Listar todos os arquivos YAML gerados no diretório especificado
+    yaml_files = [f for f in os.listdir(yaml_dir) if f.startswith('output_') and f.endswith('.yaml')]
+
+    # Iterar sobre cada arquivo YAML encontrado
+    for yaml_file in yaml_files:
         try:
-            with open(output_file, 'w', encoding='utf-8') as file:
-                yaml.dump(final_output, file, default_flow_style=False, allow_unicode=True)
-            print(f"\nDados salvos em {output_file}")
-            print(f"Número de artigos processados: {len(all_articles)}")
-        except Exception as e:
-            print(f"\nErro ao salvar o arquivo de saída: {e}")
-    else:
-        print("\nNenhum artigo foi processado com sucesso.")
+            # Caminho completo do arquivo YAML
+            yaml_path = os.path.join(yaml_dir, yaml_file)
 
+            # Ler o conteúdo do arquivo YAML
+            with open(yaml_path, 'r', encoding='utf-8') as file:
+                article_data = yaml.safe_load(file)
+
+            # Verificar se contém a chave 'ARTIGO' e se está no formato esperado
+            if article_data and 'ARTIGO' in article_data:
+                artigo = article_data['ARTIGO'][0]
+
+                # Gerar o conteúdo em Markdown usando a função generate_linkedin_article()
+                markdown_content, _ = generate_linkedin_article(artigo, yaml_file)
+
+                # Salvar o artigo em um arquivo .md se o conteúdo for gerado com sucesso
+                if markdown_content:
+                    nome_md = f"{os.path.splitext(yaml_file)[0]}.md"
+                    markdown_path = os.path.join(markdown_dir, nome_md)
+
+                    save_article(markdown_content, markdown_path)
+                    print(f"Artigo salvo em: {markdown_path}")
+                else:
+                    print(f"\nErro ao gerar o artigo para {yaml_file}")
+
+        except Exception as e:
+            print(f"\nErro ao processar o arquivo YAML {yaml_file}: {e}")
+            continue
 
 def run():
     """
-    Executar o processamento de PDFs.
+    Executar o processamento de PDFs e a geração de artigos.
 
-    Esta função chama a função 'processar_pdfs()' para iniciar o processamento dos
-    PDFs disponíveis na pasta especificada.
+    Esta função primeiro chama a função 'processar_pdfs()' para iniciar o processamento
+    dos PDFs disponíveis na pasta especificada e salvar os resultados em arquivos YAML
+    separados. Em seguida, chama a função 'gerar_artigos_a_partir_de_yaml()' para criar
+    artigos em Markdown a partir dos arquivos YAML gerados.
     """
     processar_pdfs()
+    gerar_artigos_a_partir_de_yaml()
 
 
 if __name__ == "__main__":

@@ -1,3 +1,5 @@
+import os
+
 from crewai import Agent, Crew, Process, Task
 
 class RevisorArtigosSl3V1Crew:
@@ -9,7 +11,7 @@ class RevisorArtigosSl3V1Crew:
     A classe é configurada com agentes e tarefas definidos nos arquivos YAML de configuração.
     """
 
-    def __init__(self, agents_config=None, tasks_config=None, llm=None, pdf_tool=None):
+    def __init__(self, agents_config=None, tasks_config=None, llm=None, pdf_tool=None, serper_tool=None):
         """
         Inicializa a equipe com as configurações necessárias.
 
@@ -18,17 +20,20 @@ class RevisorArtigosSl3V1Crew:
             tasks_config (dict, opcional): Configurações das tarefas do arquivo tasks.yaml.
             llm: Modelo de linguagem a ser usado pelos agentes.
             pdf_tool: Ferramenta para leitura de PDFs, utilizada pelo agente Leitor.
+            serper_tool: Ferramenta para buscar informações adicionais, utilizada pelo agente Criador de Artigos.
 
         Atributos:
             agents_config (dict): Armazena as configurações dos agentes.
             tasks_config (dict): Armazena as configurações das tarefas.
             llm: Instância do modelo de linguagem a ser usada pelos agentes.
             pdf_tool: Instância da ferramenta de leitura de PDFs.
+            serper_tool: Instância da ferramenta para buscar informações adicionais.
         """
         self.agents_config = agents_config or {}
         self.tasks_config = tasks_config or {}
         self.llm = llm
         self.pdf_tool = pdf_tool
+        self.serper_tool = serper_tool
 
     def _create_leitor_pdfs(self):
         """
@@ -71,6 +76,27 @@ class RevisorArtigosSl3V1Crew:
             verbose=True
         )
 
+    def _create_criador_artigos(self):
+        """
+        Cria o agente Criador de Artigos LinkedIn usando a configuração do agents.yaml.
+
+        Este agente é responsável por criar um artigo para o LinkedIn, usando informações
+        adicionais buscadas com o SerperDevTool.
+
+        Returns:
+            Agent: Instância do agente configurado para criar artigos no LinkedIn.
+        """
+        agent_config = self.agents_config.get('criador_artigos_linkedin', {})
+
+        return Agent(
+            role=agent_config.get('role'),
+            goal=agent_config.get('goal'),
+            backstory=agent_config.get('backstory'),
+            tools=[self.serper_tool] if self.serper_tool else [],
+            llm=self.llm,
+            verbose=True
+        )
+
     def create_crew(self):
         """
         Cria e retorna a equipe configurada usando as definições dos YAMLs.
@@ -85,10 +111,12 @@ class RevisorArtigosSl3V1Crew:
         # Criar os agentes
         leitor = self._create_leitor_pdfs()
         revisor = self._create_revisor_yaml()
+        criador_artigos = self._create_criador_artigos()
 
         # Criar as tarefas usando as configurações do tasks.yaml
         leitura_config = self.tasks_config.get('leitura_pdfs', {})
         revisao_config = self.tasks_config.get('revisao_yaml', {})
+        criar_artigo_config = self.tasks_config.get('criar_artigo_linkedin', {})
 
         # Criar a tarefa de leitura de PDFs
         leitura = Task(
@@ -105,10 +133,19 @@ class RevisorArtigosSl3V1Crew:
             context=[leitura]  # A tarefa de revisão depende da conclusão da leitura
         )
 
-        # Criar e retornar a equipe (Crew)
+        # Criar a tarefa de criação de artigo para o LinkedIn
+        criar_artigo = Task(
+            description=criar_artigo_config.get('description', ''),
+            expected_output=criar_artigo_config.get('expected_output', ''),
+            agent=criador_artigos,
+            context=[revisao]  # A tarefa de criação depende da revisão
+        )
+
+        # # Criar e retornar a equipe (Crew)
         return Crew(
-            agents=[leitor, revisor],
-            tasks=[leitura, revisao],
-            process=Process.sequential,  # Define o processo sequencial de execução
+            agents=[leitor, revisor, criador_artigos],
+            tasks=[leitura, revisao, criar_artigo],
+            process=Process.sequential,
             verbose=True
         )
+

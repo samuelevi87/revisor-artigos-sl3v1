@@ -43,6 +43,7 @@ leitura_pdfs:
         - LIMITAÇÕES: "Limitações do artigo científico"
         - VIESES: "Vieses encontrados no artigo científico"
         - CONCLUSÃO: "Conclusões"
+        - FUTURO - "Recomendações para Pesquisa Futura"
         - AVALIAÇÃO: "Análise do artigo"
       </template>
 
@@ -88,6 +89,7 @@ revisao_yaml:
       4 - DATASET - Confira se os datasets foram corretamente identificados e listados.
       5 - RESULTADOS - Verifique se os resultados foram apresentados com dados quantitativos e comparações adequadas.
       6 - LIMITAÇÕES - Confirme se as limitações foram parafraseadas corretamente.
+      7 - VIESES - Confirme se foram encontrados e listados vieses metodológicos, de seleção, de publicação ou outros que possam ter influenciado os resultados do estudo.
       7 - CONCLUSÃO - Verifique se as conclusões foram resumidas de forma precisa.
       8 - FUTURO - Confirme se as recomendações para futuras pesquisas foram extraídas adequadamente.
       9 - AVALIAÇÃO - Certifique-se de que a avaliação crítica foi feita de forma aprofundada.
@@ -103,6 +105,32 @@ revisao_yaml:
         - DATASET: "Datasets utilizados"
         - RESULTADOS: "Resultados do artigo"
         - LIMITAÇÕES: "Limitações do artigo científico"
+        - VIESES: "Vieses encontrados no artigo científico"
         - CONCLUSÃO: "Conclusões"
+        - FUTURO - "Recomendações para Pesquisa Futura"
         - AVALIAÇÃO: "Análise do artigo"
       </template>
+
+# Criar Artigo LinkedIn em Markdown
+criar_artigo_linkedin:
+  description: >
+    Criar um artigo para o LinkedIn com base nos dados YAML revisados pelo agente Revisor.
+    O artigo incluirá um título chamativo, um hook inicial, seções principais baseadas nos
+    componentes do YAML (GAP, OBJETIVOS, METODOLOGIA, RESULTADOS), e uma chamada para engajamento.
+  expected_output: >
+    Arquivo Markdown (.md) com o artigo completo para o LinkedIn.
+  inputs:
+    titulo: "Título do artigo gerado a partir do nome do arquivo PDF"
+    hook: >
+      "Você já parou para pensar como as últimas descobertas científicas podem
+      revolucionar sua área de atuação? 🤔"
+    secoes:
+      gap: "Por que isso importa? 🎯"
+      objetivos: "Descobertas Principais 💡"
+      metodologia: "Como chegaram a isso? 🔍"
+      resultados: "Resultados que Impressionam 📊"
+    provocacao: >
+      "Qual dessas descobertas mais chamou sua atenção? Como você aplicaria isso no seu contexto profissional?"
+    hashtags: >
+      "#Inovação #PesquisaCientífica #DesenvolvimentoProfissional #Tecnologia
+      #Futuro #IA #Carreira #Desenvolvimento #Tendências"
