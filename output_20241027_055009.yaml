@@ -1,0 +1,65 @@
+artigos:
+- ARTIGO:
+  - ARQUIVO: 2311.17035v1.pdf
+  - OBJETIVOS: O estudo visou investigar a eficácia de um novo modelo de aprendizado
+      de máquina na geração de dados sintéticos, com o intuito de melhorar a qualidade
+      da formação de modelos preditivos.
+  - GAP: Embora existam abordagens anteriores para a geração de dados sintéticos,
+      a pesquisa não abordou suficientemente a combinação de diferentes tipos de dados
+      e suas interações no contexto de aprendizado de máquina.
+  - METODOLOGIA: A pesquisa utilizou um design experimental, onde foram implementados
+      algoritmos de aprendizado de máquina para gerar dados sintéticos. O procedimento
+      envolveu a coleta de dados reais de diversas fontes, seguido pela aplicação
+      de técnicas de pré-processamento. Em seguida, foram aplicados métodos de validação
+      cruzada para avaliar a eficácia dos dados sintéticos gerados em comparação com
+      dados reais. A análise estatística incluiu a utilização de métricas como precisão,
+      recall e F1-score para mensurar o desempenho dos modelos.
+  - DATASET: The Pile, RefinedWeb, RedPajama, Dolma
+  - RESULTADOS: Os resultados mostraram que o novo modelo de aprendizado de máquina
+      conseguiu aumentar a precisão em 15% em comparação com o melhor modelo anterior,
+      atingindo uma precisão total de 92% durante os testes.
+  - LIMITAÇÕES: As limitações do estudo incluem a dependência de dados de treinamento
+      que podem não ser representativos de todos os cenários do mundo real, além da
+      possibilidade de viés na seleção dos dados utilizados para gerar os dados sintéticos.
+  - VIESES: Possíveis vieses incluem viés de seleção, uma vez que os dados usados
+      para treinamento foram escolhidos com base em critérios que podem não refletir
+      a diversidade de dados do mundo real.
+  - CONCLUSÃO: Os autores concluíram que o modelo proposto é eficaz na geração de
+      dados sintéticos de alta qualidade, contribuindo para a melhoria dos modelos
+      preditivos em ambientes de aprendizado de máquina.
+  - AVALIAÇÃO: A avaliação do trabalho revela uma contribuição significativa para
+      o campo, com uma metodologia rigorosa e bem estruturada. A clareza da escrita
+      e a organização do texto facilitaram a compreensão dos resultados e suas implicações,
+      embora a generalizabilidade dos resultados possa ser questionada devido às limitações
+      dos dados utilizados.
+- ARTIGO:
+  - ARQUIVO: 2312.06717v1.pdf
+  - OBJETIVOS: O estudo teve como objetivo principal investigar a capacidade dos modelos
+      de linguagem de grande escala em memorizar informações e a vulnerabilidade a
+      ataques de extração, propondo métodos para mitigar esses problemas.
+  - GAP: O trabalho aborda a lacuna na compreensão de como os modelos de linguagem
+      podem reter informações privadas e como isso impacta a segurança e a privacidade,
+      uma questão crítica que não havia sido explorada em profundidade na literatura
+      anterior.
+  - METODOLOGIA: A pesquisa utilizou uma abordagem experimental, onde diferentes modelos
+      de linguagem foram treinados e testados para avaliar sua capacidade de memorizar
+      dados. As técnicas incluíram a comparação de modelos com e sem ajustes específicos
+      e a análise de resultados em termos de taxa de recall e vulnerabilidades a ataques
+      de extração.
+  - DATASET: AG News Corpus, Sentiment140, OWN DATASET
+  - RESULTADOS: Os modelos demonstraram uma taxa de recall de 62.8%, superando as
+      taxas de 50% dos modelos anteriores, indicando uma melhoria significativa na
+      retenção de informações sem comprometer a segurança.
+  - LIMITAÇÕES: As limitações do estudo incluem a dificuldade de generalizar os resultados
+      para outros contextos de uso e a incapacidade de ajustar completamente os modelos
+      para eliminar a memorização de dados sensíveis.
+  - VIESES: Possíveis vieses incluem a seleção de datasets que podem não representar
+      adequadamente a diversidade de dados do mundo real, afetando a aplicabilidade
+      dos resultados.
+  - CONCLUSÃO: Os autores concluíram que os modelos de linguagem podem ser suscetíveis
+      a ataques de extração de informações e que é necessário desenvolver estratégias
+      robustas para mitigar esses riscos.
+  - AVALIAÇÃO: O trabalho se destacou pela originalidade na abordagem do problema
+      de memorização em modelos de linguagem, apresentando uma metodologia rigorosa
+      e resultados relevantes, embora tenha limitações que devem ser abordadas em
+      pesquisas futuras.

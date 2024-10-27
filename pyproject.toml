@@ -1,0 +1,20 @@
+[project]
+name = "revisor_artigos_sl3v1"
+version = "0.1.0"
+description = "revisor-artigos-sl3v1 using crewAI"
+authors = [{ name = "Samuel Levi Araújo Alves", email = "samuel.levi.alves@outlook.com" }]
+requires-python = ">=3.10,<=3.13"
+dependencies = [
+    "crewai[tools]>=0.76.2,<1.0.0"
+]
+
+[project.scripts]
+revisor_artigos_sl3v1 = "revisor_artigos_sl3v1.main:run"
+run_crew = "revisor_artigos_sl3v1.main:run"
+train = "revisor_artigos_sl3v1.main:train"
+replay = "revisor_artigos_sl3v1.main:replay"
+test = "revisor_artigos_sl3v1.main:test"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

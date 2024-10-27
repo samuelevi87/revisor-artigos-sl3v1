@@ -1,0 +1,108 @@
+# tasks.yaml
+
+# Tarefa de Leitura de PDFs
+leitura_pdfs:
+  description: >
+    Ler o conteúdo de um PDF e extrair informações específicas conforme as solicitações definidas.
+    O resultado deve ser gerado em formato YAML, seguindo o template especificado.
+  expected_output: >
+    YAML contendo as respostas às solicitações definidas, estruturado conforme o template proposto.
+  agent: leitor_pdfs
+  inputs:
+    solicitacoes: |
+      <solicitacoes>
+      1 - OBJETIVOS - Identificação dos Objetivos: Realize uma análise cuidadosa do conteúdo do trabalho para extrair os objetivos principais.
+      Resuma esses objetivos em um parágrafo claro e conciso, capturando a essência das metas e intenções do estudo. A extração precisa dos objetivos é fundamental para entender o propósito do estudo.6
+      2 - GAP - Identificação do GAP: Analise o conteúdo do trabalho para identificar o GAP científico que ele aborda, mesmo que não esteja explicitamente mencionado.
+      Formule um parágrafo conciso, focando em destacar a questão central que o estudo procura resolver ou elucidar. A identificação do gap científico demonstra a relevância do trabalho e contribui para a avaliação crítica.
+      3 - METODOLOGIA - Extração Detalhada da Metodologia do Trabalho: Proceda com uma análise minuciosa do trabalho para identificar a metodologia utilizada.
+      Detalhe cada aspecto da metodologia, incluindo o desenho do estudo, as técnicas e ferramentas empregadas, os procedimentos de coleta e análise de dados,
+      os passos do método e quaisquer metodologias específicas ou inovadoras adotadas.
+      Formule uma descrição compreensiva em texto corrido, limitando-se a um máximo de 350 palavras. A descrição detalhada da metodologia permite avaliar a validade e a confiabilidade dos resultados.
+      4 - DATASET - Identifique os datasets usados no trabalho. Descreva-os brevemente em texto corrido, limitando-se a 40 palavras. A identificação dos datasets é crucial para avaliar a generalizabilidade dos resultados e a reprodutibilidade do estudo.
+      Quero somente o nome dos datasets na mesma linha e separados por vírgula. Se o dataset foi criado pelos autores, escreva "OWN DATASET".
+      5 - RESULTADOS - Escreva em um parágrafo os resultados obtidos no estudo, dando ênfase a dados quantitativos.
+      Inclua dados numéricos explicitamente e destaque a comparação com o melhor trabalho anterior em relação ao trabalho proposto.
+      Mantenha o tom neutro e científico, sem usar superlativos. A apresentação clara e concisa dos resultados, com ênfase em dados quantitativos e comparações, facilita a compreensão do estudo.
+      6 - LIMITAÇÕES - Produza um texto parafraseado das limitações do trabalho. A identificação das limitações demonstra a consciência dos autores sobre as possíveis fragilidades do estudo.
+      7 - VIESES -  Identifique possíveis vieses metodológicos, de seleção, de publicação ou outros que possam ter influenciado os resultados do estudo, isso pode contribuir para uma avaliação mais crítica e completa.
+      8 - CONCLUSÃO - Resuma as conclusões dos autores em relação ao trabalho. A síntese das conclusões permite avaliar se os objetivos foram alcançados e se as hipóteses foram confirmadas.
+      9 - FUTURO - Extraia as Recomendações para Pesquisa Futura: Aponte recomendações para futuras investigações baseadas nas conclusões do artigo. As recomendações para futuras pesquisas indicam as direções promissoras para o avanço da área.
+      10 - AVALIAÇÃO - Faça uma avaliação crítica do trabalho. Não seja generalista; faça uma crítica aprofundada. Defina critérios mais específicos para a avaliação, como a originalidade das contribuições do estudo em relação à literatura existente, a clareza da escrita e a organização do texto, a relevância do estudo para a área de pesquisa e seu potencial impacto, a rigorosidade da metodologia empregada e a adequação dos instrumentos de coleta e análise de dados, etc., para tornar a análise mais consistente.
+      </solicitacoes>
+
+    template: |
+      <template>
+      ARTIGO:
+        - ARQUIVO: "nome do arquivo.pdf"
+        - OBJETIVOS: "Objetivo geral e específicos"
+        - GAP: "Gap científico"
+        - METODOLOGIA: "Metodologia"
+        - DATASET: "Datasets utilizados"
+        - RESULTADOS: "Resultados do artigo"
+        - LIMITAÇÕES: "Limitações do artigo científico"
+        - VIESES: "Vieses encontrados no artigo científico"
+        - CONCLUSÃO: "Conclusões"
+        - AVALIAÇÃO: "Análise do artigo"
+      </template>
+
+    controles: |
+      <controle>
+      NÍVEIS DE CONTROLE:
+      1. Entonação: Formal Científico.
+      2. Foco de Tópico: Responda sempre com alto foco no texto do artigo científico.
+      3. Língua: Responda sempre em Português do Brasil, aderindo aos padrões de redação científica do país.
+      4. Controle de Sentimento: Neutro / Objetivo / Qualificado (sugere, indica, evidencia). Seja científico e evite superlativos como: inovador, revolucionário, etc.
+      5. Nível de Originalidade: 10, onde 1 é pouco original e 10 é muito original. Em **hipótese alguma** copie frases do texto original.
+      6. Nível de Abstração: 10 (1: muito concreto, 10: muito abstrato e irreal).
+      7. Tempo Verbal: Escreva no passado.
+      8. Fontes: Deve citar as fontes utilizadas para suas respostas.
+      9. Profundidade: Análise detalhada
+      </controle>
+
+    restricoes: |
+      <restricoes>
+      O QUE NÃO DEVE SER TRADUZIDO DO INGLÊS PARA PORTUGUÊS:
+      1. Termos técnicos em inglês amplamente aceitos e usados nos textos em português.
+      2. Nome de algoritmos de machine learning.
+      3. Métricas usadas no trabalho.
+      4. Nome dos datasets.
+      5. Não envolva o retorno do YAML com ```yaml.
+      6. Não coloque ``` nem ´´´ no texto de retorno.
+      </restricoes>
+
+# Tarefa de Revisão de YAML
+revisao_yaml:
+  description: >
+    Revisar o YAML gerado pelo Agente Leitor para garantir que ele esteja conforme o template especificado
+    e que contenha todas as informações solicitadas.
+  expected_output: >
+    YAML revisado, corrigido e validado de acordo com as solicitações e o template proposto.
+  agent: revisor_yaml
+  inputs:
+    solicitacoes: |
+      <solicitacoes>
+      1 - OBJETIVOS - Verifique se os objetivos foram extraídos e resumidos de forma clara e completa.
+      2 - GAP - Confirme se o GAP foi identificado e descrito de maneira concisa.
+      3 - METODOLOGIA - Certifique-se de que a metodologia foi descrita de forma detalhada e dentro do limite de palavras.
+      4 - DATASET - Confira se os datasets foram corretamente identificados e listados.
+      5 - RESULTADOS - Verifique se os resultados foram apresentados com dados quantitativos e comparações adequadas.
+      6 - LIMITAÇÕES - Confirme se as limitações foram parafraseadas corretamente.
+      7 - CONCLUSÃO - Verifique se as conclusões foram resumidas de forma precisa.
+      8 - FUTURO - Confirme se as recomendações para futuras pesquisas foram extraídas adequadamente.
+      9 - AVALIAÇÃO - Certifique-se de que a avaliação crítica foi feita de forma aprofundada.
+      </solicitacoes>
+
+    template: |
+      <template>
+      ARTIGO:
+        - ARQUIVO: "nome do arquivo.pdf"
+        - OBJETIVOS: "Objetivo geral e específicos"
+        - GAP: "Gap científico"
+        - METODOLOGIA: "Metodologia"
+        - DATASET: "Datasets utilizados"
+        - RESULTADOS: "Resultados do artigo"
+        - LIMITAÇÕES: "Limitações do artigo científico"
+        - CONCLUSÃO: "Conclusões"
+        - AVALIAÇÃO: "Análise do artigo"
+      </template>
