@@ -18,6 +18,7 @@ Date: 2024-10-27
 import logging
 # Importações necessárias para o funcionamento do script
 import os
+import re
 import sys
 import yaml
 from typing import Dict, Optional, Union, List, Tuple
@@ -308,6 +309,15 @@ def setup_logging() -> None:
     logging.info(f"Iniciando processamento de artigos - {dt.now():%Y-%m-%d %H:%M:%S}")
 
 
+# Função para sanitizar o nome do arquivo removendo caracteres inválidos
+def sanitize_filename(filename):
+    """
+    Remove caracteres inválidos do nome do arquivo.
+    Substitui caracteres como \ / : * ? " < > | e \n por _.
+    """
+    return re.sub(r'[\\/*?:"<>|\n]', '_', filename)
+
+
 def processar_pdfs() -> bool:
     """
     Processa PDFs e gera análises em YAML usando agentes CrewAI.
@@ -416,63 +426,60 @@ def processar_pdfs() -> bool:
                 logging.info(f"Executando processamento para: {pdf_path.name}")
                 results = crew.kickoff(inputs=leitura_inputs)
 
-                # Extrair e processar YAML
                 logging.info("Processando resultado da crew")
-                logging.info(f"Tipo do resultado: {type(results)}")
 
-                yaml_content = None
-                # Converter CrewOutput para string
-                if hasattr(results, 'raw'):
-                    results_str = str(results.raw)
-                    logging.debug(
-                        f"Conteúdo bruto do resultado:\n{results_str[:200]}...")  # Primeiros 200 caracteres para debug
+                try:
+                    # Acessar os resultados de cada tarefa
+                    tasks_output = results.tasks_output
 
-                    # Tentar extrair YAML usando diferentes padrões
-                    if "```yaml" in results_str:
-                        try:
-                            yaml_content = results_str.split("```yaml")[1].split("```")[0].strip()
-                            logging.info("YAML extraído usando delimitadores ```yaml")
-                        except Exception as e:
-                            logging.error(f"Erro ao extrair YAML com delimitadores: {e}")
+                    for task_output in tasks_output:
+                        logging.info(f"Processando output da tarefa: {task_output.description}")
 
-                    elif "ARTIGO:" in results_str:
-                        try:
-                            yaml_content = results_str[results_str.find("ARTIGO:"):]
-                            logging.info("YAML extraído usando marcador ARTIGO:")
-                        except Exception as e:
-                            logging.error(f"Erro ao extrair YAML com marcador ARTIGO: {e}")
+                        if "Leitor de PDFs" in task_output.agent or "Revisor" in task_output.agent:
+                            # Processar output YAML
+                            if task_output.raw:
+                                yaml_content = None
+                                content = str(task_output.raw)
 
-                    # Verificar se o conteúdo extraído é válido
-                    if yaml_content:
-                        logging.debug(f"Conteúdo YAML extraído:\n{yaml_content}")
-                        try:
-                            # Tentar fazer parse do YAML
-                            article_data = yaml.safe_load(yaml_content)
+                                if "```yaml" in content:
+                                    yaml_content = content.split("```yaml")[1].split("```")[0].strip()
+                                elif "ARTIGO:" in content:
+                                    yaml_content = content[content.find("ARTIGO:"):]
 
-                            if article_data and isinstance(article_data, dict) and 'ARTIGO' in article_data:
-                                yaml_file = yaml_dir / f'output_{pdf_path.stem}.yaml'
-                                logging.info(f"Estrutura do YAML válida, contém chave ARTIGO")
+                                # Salvar o resultado em um arquivo YAML específico para o PDF
+                                if yaml_content:
+                                    try:
+                                        article_data = yaml.safe_load(yaml_content)
+                                        if article_data and isinstance(article_data, dict):
+                                            # Sanitizar o nome do arquivo PDF e do agente
+                                            sanitized_pdf_name = sanitize_filename(pdf_path.stem)
+                                            sanitized_agent_name = sanitize_filename(task_output.agent)
 
-                                # Salvar o YAML
-                                try:
-                                    with open(yaml_file, 'w', encoding='utf-8') as file:
-                                        yaml.dump(article_data, file,
-                                                  default_flow_style=False,
-                                                  allow_unicode=True,
-                                                  sort_keys=False)
-                                    logging.info(f"YAML salvo com sucesso em: {yaml_file}")
-                                    processed_successfully = True
-                                except Exception as e:
-                                    logging.error(f"Erro ao salvar arquivo YAML: {e}")
-                            else:
-                                logging.error(
-                                    f"YAML não contém a estrutura esperada: {article_data.keys() if article_data else None}")
-                        except yaml.YAMLError as e:
-                            logging.error(f"Erro no parse do YAML: {e}")
-                    else:
-                        logging.error("Não foi possível extrair conteúdo YAML válido do resultado")
-                else:
-                    logging.error(f"Resultado não contém atributo 'raw': {dir(results)}")
+                                            # Criar o caminho do arquivo YAML
+                                            yaml_file = yaml_dir / f'output_{sanitized_pdf_name}_{sanitized_agent_name}.yaml'
+
+                                            # Salvar o arquivo YAML
+                                            with open(yaml_file, 'w', encoding='utf-8') as file:
+                                                yaml.dump(article_data, file, default_flow_style=False,
+                                                          allow_unicode=True)
+
+                                            logging.info(f"YAML salvo em: {yaml_file}")
+                                            processed_successfully = True
+                                    except yaml.YAMLError as e:
+                                        logging.error(f"Erro ao processar YAML: {e}")
+
+                        elif "Criador de Artigos" in task_output.agent:
+                            # Processar output Markdown
+                            if task_output.raw:
+                                md_file = yaml_dir.parent / 'artigos_markdown' / f'artigo_{pdf_path.stem}.md'
+                                with open(md_file, 'w', encoding='utf-8') as file:
+                                    file.write(str(task_output.raw))
+                                logging.info(f"Artigo Markdown salvo em: {md_file}")
+                                processed_successfully = True
+
+                except Exception as e:
+                    logging.error(f"Erro ao processar resultados: {e}", exc_info=True)
+                    continue
 
             except Exception as e:
                 logging.error(f"Erro ao processar {pdf_path.name}: {e}", exc_info=True)

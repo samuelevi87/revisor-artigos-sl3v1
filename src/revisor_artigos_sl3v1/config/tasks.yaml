@@ -7,6 +7,7 @@ leitura_pdfs:
     O resultado deve ser gerado em formato YAML, seguindo o template especificado.
   expected_output: >
     YAML contendo as respostas às solicitações definidas, estruturado conforme o template proposto.
+  output_file: 'revisor_artigos_sl3v1/resources/yamls/output.yaml'
   agent: leitor_pdfs
   inputs:
     solicitacoes: |
@@ -79,7 +80,7 @@ revisao_yaml:
     e que contenha todas as informações solicitadas.
   expected_output: >
     YAML revisado, corrigido e validado de acordo com as solicitações e o template proposto.
-  output_file: 'revisor_artigos_sl3v1/resources/yamls/output.yaml'
+  output_file: 'revisor_artigos_sl3v1/resources/yamls/output_revisado.yaml'
   agent: revisor_yaml
   inputs:
     solicitacoes: |
@@ -120,6 +121,7 @@ criar_artigo_linkedin:
     componentes do YAML (GAP, OBJETIVOS, METODOLOGIA, RESULTADOS), e uma chamada para engajamento.
   expected_output: >
     Arquivo Markdown (.md) com o artigo completo para o LinkedIn.
+  output_file: 'revisor_artigos_sl3v1/resources/artigos_markdown/artigo.md'
   inputs:
     titulo: "Título do artigo gerado a partir do nome do arquivo PDF"
     hook: >

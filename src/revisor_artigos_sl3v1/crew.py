@@ -101,9 +101,10 @@ class RevisorArtigosSl3V1Crew:
         """
         Cria e retorna a equipe configurada usando as definições dos YAMLs.
 
-        A equipe (Crew) é composta por dois agentes: um Leitor de PDFs e um Revisor de YAML.
-        Cada agente realiza uma tarefa específica, e as tarefas são executadas de forma
-        sequencial, onde a tarefa de revisão depende da conclusão da tarefa de leitura.
+        A equipe (Crew) é composta por três agentes que trabalham sequencialmente:
+        1. Leitor de PDFs: Extrai informações do PDF
+        2. Revisor de YAML: Valida o conteúdo extraído
+        3. Criador de artigos: Gera conteúdo para LinkedIn
 
         Returns:
             Crew: Instância da equipe configurada para processamento de PDFs.
@@ -113,39 +114,47 @@ class RevisorArtigosSl3V1Crew:
         revisor = self._create_revisor_yaml()
         criador_artigos = self._create_criador_artigos()
 
-        # Criar as tarefas usando as configurações do tasks.yaml
+        # Obter configurações
         leitura_config = self.tasks_config.get('leitura_pdfs', {})
         revisao_config = self.tasks_config.get('revisao_yaml', {})
         criar_artigo_config = self.tasks_config.get('criar_artigo_linkedin', {})
 
-        # Criar a tarefa de leitura de PDFs
+        # Tarefa de leitura com output_file especificado
         leitura = Task(
             description=leitura_config.get('description', ''),
             expected_output=leitura_config.get('expected_output', ''),
-            agent=leitor
+            agent=leitor,
+            output_format="YAML",  # Especifica formato de saída
+            output_file=leitura_config.get('output_file')  # Nome do arquivo de saída a partir do YAML
         )
 
-        # Criar a tarefa de revisão de YAML
+        # Tarefa de revisão com output_file especificado
         revisao = Task(
             description=revisao_config.get('description', ''),
             expected_output=revisao_config.get('expected_output', ''),
             agent=revisor,
-            context=[leitura]  # A tarefa de revisão depende da conclusão da leitura
+            context=[leitura],
+            output_format="YAML",  # Especifica formato de saída
+            output_file=revisao_config.get('output_file')  # Nome do arquivo de saída a partir do YAML
         )
 
-        # Criar a tarefa de criação de artigo para o LinkedIn
+        # Tarefa de criação de artigo
         criar_artigo = Task(
             description=criar_artigo_config.get('description', ''),
             expected_output=criar_artigo_config.get('expected_output', ''),
             agent=criador_artigos,
-            context=[revisao]  # A tarefa de criação depende da revisão
+            context=[revisao],
+            output_format="markdown",  # Especifica formato de saída
+            output_file=criar_artigo_config.get('output_file')  # Nome do arquivo de saída a partir do YAML
         )
 
-        # # Criar e retornar a equipe (Crew)
+        # Criar e retornar a equipe com configurações adicionais
         return Crew(
             agents=[leitor, revisor, criador_artigos],
             tasks=[leitura, revisao, criar_artigo],
             process=Process.sequential,
-            verbose=True
+            verbose=True,
+            full_output=True,  # Retorna todos os outputs intermediários
+            cache=True  # Habilita cache para melhor performance
         )
 
