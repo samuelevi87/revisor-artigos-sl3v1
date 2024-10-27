@@ -417,38 +417,62 @@ def processar_pdfs() -> bool:
                 results = crew.kickoff(inputs=leitura_inputs)
 
                 # Extrair e processar YAML
+                logging.info("Processando resultado da crew")
+                logging.info(f"Tipo do resultado: {type(results)}")
+
                 yaml_content = None
-                if isinstance(results, str):  # Verificar se results é uma string
-                    if "```yaml" in results:
-                        yaml_content = results.split("```yaml")[1].split("```")[0].strip()
-                    elif "ARTIGO:" in results:
-                        yaml_content = results[results.find("ARTIGO:"):]
+                # Converter CrewOutput para string
+                if hasattr(results, 'raw'):
+                    results_str = str(results.raw)
+                    logging.debug(
+                        f"Conteúdo bruto do resultado:\n{results_str[:200]}...")  # Primeiros 200 caracteres para debug
 
-                    logging.info("Conteúdo YAML extraído:")
-                    logging.info(yaml_content)  # Log para debug
-
-                    if yaml_content:
+                    # Tentar extrair YAML usando diferentes padrões
+                    if "```yaml" in results_str:
                         try:
+                            yaml_content = results_str.split("```yaml")[1].split("```")[0].strip()
+                            logging.info("YAML extraído usando delimitadores ```yaml")
+                        except Exception as e:
+                            logging.error(f"Erro ao extrair YAML com delimitadores: {e}")
+
+                    elif "ARTIGO:" in results_str:
+                        try:
+                            yaml_content = results_str[results_str.find("ARTIGO:"):]
+                            logging.info("YAML extraído usando marcador ARTIGO:")
+                        except Exception as e:
+                            logging.error(f"Erro ao extrair YAML com marcador ARTIGO: {e}")
+
+                    # Verificar se o conteúdo extraído é válido
+                    if yaml_content:
+                        logging.debug(f"Conteúdo YAML extraído:\n{yaml_content}")
+                        try:
+                            # Tentar fazer parse do YAML
                             article_data = yaml.safe_load(yaml_content)
-                            if article_data:
+
+                            if article_data and isinstance(article_data, dict) and 'ARTIGO' in article_data:
                                 yaml_file = yaml_dir / f'output_{pdf_path.stem}.yaml'
+                                logging.info(f"Estrutura do YAML válida, contém chave ARTIGO")
+
+                                # Salvar o YAML
                                 try:
                                     with open(yaml_file, 'w', encoding='utf-8') as file:
-                                        yaml.dump(article_data, file, default_flow_style=False,
-                                                  allow_unicode=True, sort_keys=False)
+                                        yaml.dump(article_data, file,
+                                                  default_flow_style=False,
+                                                  allow_unicode=True,
+                                                  sort_keys=False)
                                     logging.info(f"YAML salvo com sucesso em: {yaml_file}")
                                     processed_successfully = True
-                                except Exception as file_error:
-                                    logging.error(f"Erro ao salvar arquivo YAML: {file_error}")
-                                    raise
+                                except Exception as e:
+                                    logging.error(f"Erro ao salvar arquivo YAML: {e}")
                             else:
-                                logging.error(f"YAML vazio após parse para {pdf_path.name}")
+                                logging.error(
+                                    f"YAML não contém a estrutura esperada: {article_data.keys() if article_data else None}")
                         except yaml.YAMLError as e:
-                            logging.error(f"Erro ao fazer parse do YAML para {pdf_path.name}: {e}")
+                            logging.error(f"Erro no parse do YAML: {e}")
                     else:
-                        logging.error(f"Não foi possível extrair conteúdo YAML dos resultados para {pdf_path.name}")
+                        logging.error("Não foi possível extrair conteúdo YAML válido do resultado")
                 else:
-                    logging.error(f"Resultado inesperado do processamento para {pdf_path.name}")
+                    logging.error(f"Resultado não contém atributo 'raw': {dir(results)}")
 
             except Exception as e:
                 logging.error(f"Erro ao processar {pdf_path.name}: {e}", exc_info=True)
