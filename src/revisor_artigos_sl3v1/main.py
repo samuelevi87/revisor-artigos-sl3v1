@@ -258,19 +258,24 @@ def save_article(content: str, file_name: str) -> None:
         Artigo salvo em: src/revisor_artigos_sl3v1/resources/artigos_markdown/artigo_001.md
     """
     try:
+        # Obter diretório de artigos
         _, _, base_dir = verificar_estrutura_diretorios()
         articles_dir = base_dir / 'artigos_markdown'
 
+        # Garantir que o diretório existe
+        articles_dir.mkdir(parents=True, exist_ok=True)
+
+        # Criar caminho completo do arquivo
         file_path = articles_dir / file_name
 
+        # Salvar o arquivo
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(content)
 
-        logging.info(f"Artigo salvo em: {file_path}")
-
+        logging.info(f"Artigo salvo com sucesso em: {file_path}")
 
     except Exception as e:
-        logging.error(f"Erro ao salvar artigo: {e}")
+        logging.error(f"Erro ao salvar artigo: {e}", exc_info=True)
         raise
 
 
@@ -413,26 +418,37 @@ def processar_pdfs() -> bool:
 
                 # Extrair e processar YAML
                 yaml_content = None
-                if "```yaml" in results:
-                    yaml_content = results.split("```yaml")[1].split("```")[0].strip()
-                elif "ARTIGO:" in results:
-                    yaml_content = results[results.find("ARTIGO:"):]
+                if isinstance(results, str):  # Verificar se results é uma string
+                    if "```yaml" in results:
+                        yaml_content = results.split("```yaml")[1].split("```")[0].strip()
+                    elif "ARTIGO:" in results:
+                        yaml_content = results[results.find("ARTIGO:"):]
 
-                if yaml_content:
-                    try:
-                        article_data = yaml.safe_load(yaml_content)
-                        if article_data:
-                            yaml_file = yaml_dir / f'output_{pdf_path.stem}.yaml'
-                            with open(yaml_file, 'w', encoding='utf-8') as file:
-                                yaml.dump(article_data, file, default_flow_style=False, allow_unicode=True)
-                            logging.info(f"YAML salvo em: {yaml_file}")
-                            processed_successfully = True
-                        else:
-                            logging.error(f"YAML vazio para {pdf_path.name}")
-                    except yaml.YAMLError as e:
-                        logging.error(f"Erro ao fazer parse do YAML para {pdf_path.name}: {e}")
+                    logging.info("Conteúdo YAML extraído:")
+                    logging.info(yaml_content)  # Log para debug
+
+                    if yaml_content:
+                        try:
+                            article_data = yaml.safe_load(yaml_content)
+                            if article_data:
+                                yaml_file = yaml_dir / f'output_{pdf_path.stem}.yaml'
+                                try:
+                                    with open(yaml_file, 'w', encoding='utf-8') as file:
+                                        yaml.dump(article_data, file, default_flow_style=False,
+                                                  allow_unicode=True, sort_keys=False)
+                                    logging.info(f"YAML salvo com sucesso em: {yaml_file}")
+                                    processed_successfully = True
+                                except Exception as file_error:
+                                    logging.error(f"Erro ao salvar arquivo YAML: {file_error}")
+                                    raise
+                            else:
+                                logging.error(f"YAML vazio após parse para {pdf_path.name}")
+                        except yaml.YAMLError as e:
+                            logging.error(f"Erro ao fazer parse do YAML para {pdf_path.name}: {e}")
+                    else:
+                        logging.error(f"Não foi possível extrair conteúdo YAML dos resultados para {pdf_path.name}")
                 else:
-                    logging.warning(f"Nenhum resultado encontrado para {pdf_path.name}")
+                    logging.error(f"Resultado inesperado do processamento para {pdf_path.name}")
 
             except Exception as e:
                 logging.error(f"Erro ao processar {pdf_path.name}: {e}", exc_info=True)
