@@ -125,7 +125,7 @@ pesquisa_informacoes:
     Um texto detalhado com insights adicionais para enriquecer o conteúdo do artigo. 
     Deve incluir informações relevantes que ampliem o contexto das seções do YAML revisado, 
     como novas descobertas, dados estatísticos, tendências atuais e exemplos práticos, 
-    todos adaptados ao formato de comunicação do LinkedIn.
+    todos adaptados ao formato de comunicação do LinkedIn. Inclua os links encontrados na pesquisa.
   context: [revisao_yaml]
   agent: agente_pesquisa
   inputs:
@@ -149,8 +149,9 @@ criar_artigo_linkedin:
   expected_output: >
     Um arquivo Markdown (.md) contendo o artigo completo para o LinkedIn, incluindo título, hook inicial, seções 
     principais baseadas nos dados do YAML e da pesquisa adicional (gap, objetivos, metodologia, resultados, futuro), 
-    uma chamada para ação e hashtags relevantes. O conteúdo deve ser adequado ao tom de comunicação do LinkedIn, 
-    mantendo clareza, concisão e um estilo persuasivo.
+    uma chamada para ação e hashtags relevantes (Sempre adicione as hashtags principais, #LeviEdTech e #LeviEdTechIA).
+    O conteúdo deve ser adequado ao tom de comunicação do LinkedIn, mantendo clareza, concisão e um estilo persuasivo.
+    Não formate o retorno do Markdown com ```markdown. Evite o uso de blocos de código ou marcações de texto técnico.
   context: [pesquisa_informacoes, revisao_yaml]
   inputs:
     controles: |
@@ -190,5 +191,5 @@ criar_artigo_linkedin:
       "Inclua uma provocação final para incentivar o leitor a refletir e engajar, como: 
       'Qual dessas descobertas mais chamou sua atenção? Como você aplicaria isso no seu contexto profissional?'"
     hashtags: >
-      "Adicione as hashtags principais #LeviEdTech e #LeviEdTechIA (SEMPRE), e outras relevantes para aumentar a visibilidade, como: 
+      "Sempre adicione as hashtags principais, #LeviEdTech e #LeviEdTechIA, e outras relevantes para aumentar a visibilidade, como: 
       #Inovação #PesquisaCientífica #DesenvolvimentoProfissional #Tecnologia #Futuro #IA #Carreira #Desenvolvimento #Tendências"

@@ -352,7 +352,7 @@ def processar_pdfs() -> bool:
                 # Executar tarefa de leitura
                 results = crew.kickoff(inputs=leitura_inputs)
                 if results and hasattr(results, 'tasks_output'):
-                    yaml_content = processar_resultado_leitura(results.tasks_output, pdf_path, yaml_dir)
+                    yaml_content = processar_resultado_leitura(results.tasks_output)
                     if yaml_content:
                         resultados_revisao = processar_resultado_revisao(results.tasks_output, pdf_path, yaml_dir)
                         if resultados_revisao:
@@ -383,51 +383,74 @@ def processar_pdfs() -> bool:
 
 def processar_resultado_leitura(tasks_output: list) -> Optional[str]:
     """
-    Processa o resultado da tarefa de leitura do PDF e extrai o conteúdo em YAML.
+    Processa o resultado da tarefa de leitura do PDF, extraindo e validando o conteúdo YAML.
 
-    Esta função percorre a lista de outputs das tarefas, identifica o agente responsável pela
-    leitura do PDF e extrai o conteúdo em YAML. O conteúdo extraído será usado pelo revisor
-    para validação e posterior salvamento.
+    Esta função identifica o output do agente Leitor de PDFs, extrai o conteúdo YAML
+    e realiza validações iniciais antes de passar para o revisor. O conteúdo não é
+    salvo nesta etapa, apenas processado e validado.
 
     Args:
-        tasks_output (list): Lista de outputs das tarefas executadas pela equipe de agentes.
+        tasks_output (list): Lista de outputs das tarefas executadas pelos agentes
 
     Returns:
-        Optional[str]: O conteúdo do YAML processado, se disponível.
-                      Retorna None caso não seja possível extrair o YAML.
+        Optional[str]: Conteúdo YAML válido ou None se:
+            - Nenhum resultado do Leitor for encontrado
+            - O YAML extraído for inválido
+            - Ocorrer erro no processamento
 
     Raises:
-        yaml.YAMLError: Se houver um erro ao processar o conteúdo em YAML.
+        yaml.YAMLError: Se o conteúdo extraído não for um YAML válido
+        ValueError: Se o conteúdo estiver vazio ou mal formatado
+        TypeError: Se tasks_output não for uma lista
 
     Example:
-        >>> tasks_output = [...]  # Lista de outputs das tarefas
-        >>> yaml_content = processar_resultado_leitura(tasks_output)
+        >>> outputs = [TaskOutput(agent="Leitor de PDFs", raw="ARTIGO:\\n  - chave: valor")]
+        >>> yaml_content = processar_resultado_leitura(outputs)
         >>> if yaml_content:
-        ...     print("YAML extraído com sucesso")
+        ...     print("YAML válido extraído")
+
+    Notes:
+        O conteúdo YAML extraído deve seguir o template definido começando com 'ARTIGO:'
+        e contendo a estrutura esperada de campos.
     """
     try:
+        # Validar input
+        if not isinstance(tasks_output, list):
+            raise TypeError("tasks_output deve ser uma lista")
+
+        # Procurar resultado do Leitor
         for task_output in tasks_output:
             if "Leitor de PDFs" in task_output.agent:
                 content = str(task_output.raw)
+
+                # Extrair e validar YAML
                 yaml_content = extrair_yaml_content(content)
+                if not yaml_content:
+                    logging.warning("Conteúdo YAML não encontrado no resultado do Leitor")
+                    continue
 
-                if yaml_content:
-                    try:
-                        # Validar se é um YAML válido
-                        yaml.safe_load(yaml_content)
-                        logging.info("YAML extraído com sucesso da leitura do PDF")
-                        return yaml_content
-                    except yaml.YAMLError as e:
-                        logging.error(f"YAML extraído é inválido: {e}")
-                        return None
+                try:
+                    # Validar estrutura do YAML
+                    parsed_yaml = yaml.safe_load(yaml_content)
+                    if not isinstance(parsed_yaml, dict) or 'ARTIGO' not in parsed_yaml:
+                        raise ValueError("YAML não contém a estrutura esperada com 'ARTIGO'")
 
-        logging.warning("Nenhum resultado do Leitor de PDFs encontrado")
+                    logging.info("YAML extraído e validado com sucesso da leitura do PDF")
+                    return yaml_content
+
+                except yaml.YAMLError as e:
+                    logging.error(f"YAML extraído é inválido: {e}")
+                    return None
+                except ValueError as e:
+                    logging.error(f"Estrutura do YAML inválida: {e}")
+                    return None
+
+        logging.warning("Nenhum resultado do Leitor de PDFs encontrado nos outputs")
         return None
 
     except Exception as e:
         logging.error(f"Erro ao processar resultado da leitura: {e}", exc_info=True)
         return None
-
 
 def processar_resultado_revisao(tasks_output: list, pdf_path: Path, yaml_dir: Path) -> bool:
     """
@@ -452,22 +475,42 @@ def processar_resultado_revisao(tasks_output: list, pdf_path: Path, yaml_dir: Pa
         ...     print("YAML revisado e salvo com sucesso")
     """
     try:
+        logging.info(f"Iniciando processamento de revisão para: {pdf_path.name}")
+        logging.info(f"Diretório destino YAML: {yaml_dir}")
+
         for task_output in tasks_output:
+            logging.info(f"Processando output do agente: {task_output.agent}")
+
             if "Revisor" in task_output.agent:
                 content = str(task_output.raw)
+                logging.info("Conteúdo bruto do revisor obtido")
+
                 yaml_content = extrair_yaml_content(content)
+                logging.info(f"YAML extraído: {'Sim' if yaml_content else 'Não'}")
 
                 if yaml_content:
                     try:
                         # Validar e carregar o YAML
                         article_data = yaml.safe_load(yaml_content)
+                        logging.info("YAML carregado com sucesso")
 
                         if article_data and isinstance(article_data, dict):
                             # Sanitizar nome do arquivo
                             sanitized_pdf_name = sanitize_filename(pdf_path.stem)
+                            logging.info(f"Nome sanitizado: {sanitized_pdf_name}")
 
                             # Criar o caminho do arquivo YAML
                             yaml_file = yaml_dir / f'output_{sanitized_pdf_name}.yaml'
+                            logging.info(f"Caminho do arquivo YAML: {yaml_file}")
+
+                            # Verificar se o diretório existe e tem permissão de escrita
+                            if not yaml_dir.exists():
+                                logging.error(f"Diretório não existe: {yaml_dir}")
+                                return False
+
+                            if not os.access(yaml_dir, os.W_OK):
+                                logging.error(f"Sem permissão de escrita em: {yaml_dir}")
+                                return False
 
                             # Salvar YAML
                             with open(yaml_file, 'w', encoding='utf-8') as file:
@@ -475,8 +518,7 @@ def processar_resultado_revisao(tasks_output: list, pdf_path: Path, yaml_dir: Pa
                                           default_flow_style=False,
                                           allow_unicode=True,
                                           sort_keys=False)
-
-                            logging.info(f"YAML revisado salvo em: {yaml_file}")
+                                logging.info(f"YAML salvo com sucesso em: {yaml_file}")
                             return True
 
                     except yaml.YAMLError as e:
@@ -484,10 +526,12 @@ def processar_resultado_revisao(tasks_output: list, pdf_path: Path, yaml_dir: Pa
                 else:
                     logging.error("Nenhum conteúdo YAML válido encontrado na revisão")
 
+        logging.warning("Nenhum output do Revisor encontrado nos resultados")
+        return False
+
     except Exception as e:
         logging.error(f"Erro ao processar revisão: {e}", exc_info=True)
-
-    return False
+        return False
 
 
 # Função para sanitizar o nome do arquivo removendo caracteres inválidos
