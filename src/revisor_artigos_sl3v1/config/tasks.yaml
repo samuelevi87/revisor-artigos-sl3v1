@@ -7,7 +7,6 @@ leitura_pdfs:
     O resultado deve ser gerado em formato YAML, seguindo o template especificado.
   expected_output: >
     YAML contendo as respostas às solicitações definidas, estruturado conforme o template proposto.
-  output_file: 'revisor_artigos_sl3v1/resources/yamls/output.yaml'
   agent: leitor_pdfs
   inputs:
     solicitacoes: |
@@ -56,7 +55,7 @@ leitura_pdfs:
       3. Língua: Responda sempre em Português do Brasil, aderindo aos padrões de redação científica do país.
       4. Controle de Sentimento: Neutro / Objetivo / Qualificado (sugere, indica, evidencia). Seja científico e evite superlativos como: inovador, revolucionário, etc.
       5. Nível de Originalidade: 10, onde 1 é pouco original e 10 é muito original. Em **hipótese alguma** copie frases do texto original.
-      6. Nível de Abstração: 10 (1: muito concreto, 10: muito abstrato e irreal).
+      6. Nível de Abstração: 1 (1: muito concreto, 10: muito abstrato e irreal).
       7. Tempo Verbal: Escreva no passado.
       8. Fontes: Deve citar as fontes utilizadas para suas respostas.
       9. Profundidade: Análise detalhada
@@ -80,7 +79,6 @@ revisao_yaml:
     e que contenha todas as informações solicitadas.
   expected_output: >
     YAML revisado, corrigido e validado de acordo com as solicitações e o template proposto.
-  output_file: 'revisor_artigos_sl3v1/resources/yamls/output_revisado.yaml'
   agent: revisor_yaml
   inputs:
     solicitacoes: |
@@ -113,27 +111,84 @@ revisao_yaml:
         - AVALIAÇÃO: "Análise do artigo"
       </template>
 
+# Pesquisa na internet sobre os tópicos principais do YAML
+pesquisa_informacoes:
+  description: >
+    Realizar uma pesquisa aprofundada e orientada sobre o tema abordado no artigo científico, 
+    utilizando o SerperDevTool para obter informações complementares e atualizadas. 
+    O agente deve focar em encontrar insights adicionais que possam enriquecer as seções principais do artigo,
+    como contexto histórico, dados estatísticos recentes, avanços na área de estudo, tendências emergentes, 
+    bem como exemplos relevantes que possam ilustrar melhor os conceitos abordados. A pesquisa deve ser clara, objetiva 
+    e fornecer elementos que complementem a narrativa já revisada no YAML, destacando as informações mais 
+    relevantes e impactantes para o público do LinkedIn.
+  expected_output: >
+    Um texto detalhado com insights adicionais para enriquecer o conteúdo do artigo. 
+    Deve incluir informações relevantes que ampliem o contexto das seções do YAML revisado, 
+    como novas descobertas, dados estatísticos, tendências atuais e exemplos práticos, 
+    todos adaptados ao formato de comunicação do LinkedIn.
+  context: [revisao_yaml]
+  agent: agente_pesquisa
+  inputs:
+    consulta: >
+      Baseie as consultas nos tópicos principais identificados no YAML revisado, como:
+      1. Objetivos do estudo: Pesquisar sobre avanços ou aplicações práticas relacionadas aos objetivos destacados.
+      2. Gap científico: Buscar estudos ou dados que ilustrem a relevância do gap identificado.
+      3. Metodologia: Explorar técnicas similares ou recentes que corroboram ou aprimoram a metodologia mencionada.
+      4. Resultados: Encontrar estudos comparativos que validem ou ampliem os resultados encontrados.
+      5. Futuro: Investigar tendências e previsões futuras na área para apoiar recomendações de pesquisa futura.
+
 # Criar Artigo LinkedIn em Markdown
 criar_artigo_linkedin:
   description: >
-    Criar um artigo para o LinkedIn com base nos dados YAML revisados pelo agente Revisor.
-    O artigo incluirá um título chamativo, um hook inicial, seções principais baseadas nos
-    componentes do YAML (GAP, OBJETIVOS, METODOLOGIA, RESULTADOS), e uma chamada para engajamento.
+    Criar um artigo envolvente e informativo para o LinkedIn, utilizando dados revisados no YAML e informações 
+    adicionais coletadas durante a pesquisa. O artigo deve ter uma estrutura clara e seguir uma abordagem que 
+    combine elementos de comunicação científica com uma linguagem persuasiva e acessível para o público do LinkedIn.
+    Ele deve iniciar com um título atrativo e um hook impactante, seguido de seções que explorem o gap, os objetivos, 
+    a metodologia, os resultados do estudo e as recomendações futuras. O artigo deve ser finalizado com uma provocação 
+    para estimular o engajamento e com hashtags relevantes para ampliar a visibilidade.
   expected_output: >
-    Arquivo Markdown (.md) com o artigo completo para o LinkedIn.
-  output_file: 'revisor_artigos_sl3v1/resources/artigos_markdown/artigo.md'
+    Um arquivo Markdown (.md) contendo o artigo completo para o LinkedIn, incluindo título, hook inicial, seções 
+    principais baseadas nos dados do YAML e da pesquisa adicional (gap, objetivos, metodologia, resultados, futuro), 
+    uma chamada para ação e hashtags relevantes. O conteúdo deve ser adequado ao tom de comunicação do LinkedIn, 
+    mantendo clareza, concisão e um estilo persuasivo.
+  context: [pesquisa_informacoes, revisao_yaml]
   inputs:
-    titulo: "Título do artigo gerado a partir do nome do arquivo PDF"
+    controles: |
+      <controle>
+      NÍVEIS DE CONTROLE:
+      1. Entonação: Amigável, persuasivo e engajador.
+      2. Foco de Tópico: Conecte o estudo científico com impactos práticos e aplicações no cotidiano dos profissionais.
+      3. Língua: Responda sempre em Português do Brasil, aderindo a padrões de marketing e linguagem engajadora.
+      4. Controle de Sentimento: Use um tom reflexivo que motive o leitor a interagir, utilizando gatilhos mentais.
+      5. Nível de Originalidade: 10, priorizando insights únicos e escritos de forma autêntica.
+      6. Senso de Urgência: Utilize linguagem que incentive o engajamento imediato nos comentários.
+      7. Chamadas à Ação: Inclua chamadas explícitas para o leitor comentar, curtir e compartilhar.
+      8. Fontes: Cite as fontes utilizadas na pesquisa, inserindo links obtidos pelo agente de pesquisa.
+      9. Profundidade: Detalhe a análise sem tornar o texto excessivamente técnico ou inacessível.
+      </controle>
+    restricoes: |
+      <restricoes>
+      O QUE NÃO DEVE SER TRADUZIDO DO INGLÊS PARA PORTUGUÊS:
+      1. Termos técnicos amplamente aceitos em português.
+      2. Nome de algoritmos de machine learning.
+      3. Métricas e nomes de datasets.
+      4. Não formate o retorno do Markdown com ```markdown.
+      5. Evite o uso de blocos de código ou marcações de texto técnico.
+      </restricoes>
+    titulo: >
+      "Gerar um título atrativo para o artigo com base no tema central e nome do arquivo PDF processado."
     hook: >
-      "Você já parou para pensar como as últimas descobertas científicas podem
-      revolucionar sua área de atuação? 🤔"
+      "Inicie com uma pergunta instigante ou uma frase impactante, "click-bait", como: 
+      'Você já parou para pensar como as últimas descobertas científicas podem revolucionar sua área de atuação? 🤔'"
     secoes:
-      gap: "Por que isso importa? 🎯"
-      objetivos: "Descobertas Principais 💡"
-      metodologia: "Como chegaram a isso? 🔍"
-      resultados: "Resultados que Impressionam 📊"
+      gap: "Por que isso importa? 🎯 - Explique o gap identificado de forma simples e direta, destacando sua relevância."
+      objetivos: "Descobertas Principais 💡 - Aborde os principais objetivos do estudo e o que ele espera alcançar."
+      metodologia: "Como chegaram a isso? 🔍 - Descreva a metodologia de maneira clara e compreensível."
+      resultados: "Resultados que Impressionam 📊 - Apresente os resultados de forma destacada e objetiva."
+      futuro: "E agora? 🚀 - Comente as recomendações para futuras pesquisas e possíveis impactos no setor."
     provocacao: >
-      "Qual dessas descobertas mais chamou sua atenção? Como você aplicaria isso no seu contexto profissional?"
+      "Inclua uma provocação final para incentivar o leitor a refletir e engajar, como: 
+      'Qual dessas descobertas mais chamou sua atenção? Como você aplicaria isso no seu contexto profissional?'"
     hashtags: >
-      "#Inovação #PesquisaCientífica #DesenvolvimentoProfissional #Tecnologia
-      #Futuro #IA #Carreira #Desenvolvimento #Tendências"
+      "Adicione as hashtags principais #LeviEdTech e #LeviEdTechIA (SEMPRE), e outras relevantes para aumentar a visibilidade, como: 
+      #Inovação #PesquisaCientífica #DesenvolvimentoProfissional #Tecnologia #Futuro #IA #Carreira #Desenvolvimento #Tendências"

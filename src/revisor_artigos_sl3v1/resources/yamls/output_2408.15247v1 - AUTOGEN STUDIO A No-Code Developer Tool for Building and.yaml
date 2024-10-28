@@ -1,0 +1,39 @@
+ARTIGO:
+- ARQUIVO: 2408.15247v1 - AUTOGEN STUDIO A No-Code Developer Tool for Building and.pdf
+- OBJETIVOS: O estudo propôs desenvolver uma ferramenta no-code, chamada AUTOGENSTUDIO,
+    que permite a criação de workflows multi-agente de forma intuitiva, visando facilitar
+    a prototipagem, teste e implementação de sistemas de agentes autônomos.
+- GAP: O artigo aborda a lacuna na dificuldade de usuários não técnicos em construir
+    sistemas complexos de múltiplos agentes, destacando a necessidade de interfaces
+    intuitivas que permitam a colaboração entre agentes sem a necessidade de programação
+    extensiva.
+- METODOLOGIA: A metodologia utilizada envolveu a criação de uma interface de arrastar
+    e soltar para a definição de workflows, permitindo que usuários definissem componentes
+    e os combinassem em sistemas multi-agente. O AUTOGENSTUDIO foi testado em um caso
+    de uso prático, onde um engenheiro de software criou um aplicativo para gerar
+    livros infantis. A validação foi realizada através de testes interativos e comparação
+    de desempenho entre diferentes configurações de agentes.
+- DATASET: OWN DATASET
+- RESULTADOS: O estudo resultou na criação de um livro PDF infantil intitulado 'Weather
+    in Seattle', com 4 páginas contendo descrições e imagens de diferentes condições
+    climáticas. A abordagem multi-agente melhorou a qualidade do conteúdo gerado,
+    em comparação com tentativas anteriores que resultaram em textos mais curtos e
+    menos descritivos.
+- LIMITAÇÕES: As limitações incluem a geração de conteúdos não factuais e a dificuldade
+    em lidar com tarefas complexas que exigem raciocínio avançado. Também foi observado
+    que os workflows multi-agente podem falhar devido a configurações inadequadas
+    ou instruções imprecisas.
+- VIESES: Os vieses potenciais incluem a dependência da qualidade das instruções dadas
+    aos agentes e a possibilidade de resultados enviesados devido a dados de treinamento
+    dos modelos utilizados, que podem não refletir todas as nuances do contexto real.
+- CONCLUSÃO: Os autores concluíram que a AUTOGENSTUDIO oferece uma solução viável
+    para a criação de sistemas de agentes autônomos, mas que ainda há necessidade
+    de melhorias nas ferramentas de avaliação e depuração dos agentes para garantir
+    resultados mais confiáveis.
+- FUTURO: Recomenda-se a exploração de ferramentas de avaliação offline para medir
+    a performance e reusabilidade dos agentes, bem como o desenvolvimento de métodos
+    para entender e quantificar o impacto das decisões de design em sistemas multi-agente.
+- AVALIAÇÃO: A avaliação do trabalho destaca a originalidade das contribuições em
+    simplificar a construção de sistemas multi-agente. A clareza da escrita e a organização
+    do texto foram bem recebidas, embora a metodologia pudesse ser mais rigorosa em
+    termos de validação dos resultados obtidos.
